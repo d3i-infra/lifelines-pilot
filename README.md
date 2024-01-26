@@ -4,6 +4,11 @@
   </a>
 </p>
 
+# Port: lifelines pilot
+
+This project contains the code for a data donation task in Next. This code will be used in the lifelines pilot done by the Radboud Universiteit Nijmegen.
+This code will contain processing scripts for facebook data download packages.
+
 # Port: A frontend for data donation
 
 Port is a research tool that enables individuals to donate their digital trace data for academic research in a secure, transparent, and privacy-preserving way.
