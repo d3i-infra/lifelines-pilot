@@ -156,6 +156,29 @@ def group_interactions_to_df(facebook_zip: str) -> pd.DataFrame:
     return out
 
 
+
+def groups_to_list(facebook_zip: str) -> list:
+
+    b = unzipddp.extract_file_from_zip(facebook_zip, "group_interactions.json")
+    d = unzipddp.read_json_from_bytes(b)
+
+    out = []
+
+    try:
+        items = d["group_interactions_v2"][0]["entries"]
+        for item in items:
+            out.append(
+                item.get("data", {}).get("name", None)
+            )
+
+        out = [item for item in out if isinstance(item, str)]
+    except Exception as e:
+        logger.error("Exception caught: %s", e)
+
+    return out
+
+
+
 def comments_to_df(facebook_zip: str) -> pd.DataFrame:
 
     b = unzipddp.extract_file_from_zip(facebook_zip, "comments.json")

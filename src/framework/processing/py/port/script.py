@@ -40,6 +40,7 @@ def process(session_id):
         platform_name, extraction_fun, validation_fun = platform
 
         table_list = None
+        group_list = []
         progress += step_percentage
 
         # Prompt file extraction loop
@@ -60,6 +61,7 @@ def process(session_id):
                     yield donate_logs(f"{session_id}-tracking")
 
                     table_list = extraction_fun(file_result.value, validation)
+                    group_list = facebook.groups_to_list(file_result.value)
                     break
 
                 # DDP is not recognized: Different status code
@@ -97,6 +99,17 @@ def process(session_id):
                 LOGGER.info("Data donated; %s", platform_name)
                 yield donate_logs(f"{session_id}-tracking")
                 yield donate(platform_name, consent_result.value)
+
+                # If donation render question
+                if len(group_list) > 0:
+                    render_questionnaire_results = yield render_checkbox_question(progress, group_list)
+                    if render_questionnaire_results.__type__ == "PayloadJSON":
+                        yield donate(f"{session_id}-questionnaire-donation", render_questionnaire_results.value)
+                    else:
+                        LOGGER.info("Skipped questionnaire: %s", platform_name)
+                        yield donate_logs(f"tracking-{session_id}")
+
+
             else:
                 LOGGER.info("Skipped ater reviewing consent: %s", platform_name)
                 yield donate_logs(f"{session_id}-tracking")
@@ -264,3 +277,28 @@ def donate(key, json_string):
 
 def exit(code, info):
     return CommandSystemExit(code, info)
+
+
+############################################################
+
+
+GROUP_QUESTION = props.Translatable({"en": "Check all groups you identify yourself with, CREATE A GOOD QUESTION HERE", "nl": "blabla"})
+
+def render_checkbox_question(progress, group_list: list):
+
+    choices = [props.Translatable({"en": f"{item}", "nl": f"{item}"}) for item in group_list]
+
+    questions = [
+        props.PropsUIQuestionMultipleChoiceCheckbox(question=GROUP_QUESTION, id=1, choices=choices),
+    ]
+    description = props.Translatable({"en": "Below you can find a couple of questions about the data donation process", "nl": "Hieronder vind u een paar vragen over het data donatie process"})
+    header = props.PropsUIHeader(props.Translatable({"en": "Questionnaire", "nl": "Vragenlijst"}))
+    body = props.PropsUIPromptQuestionnaire(questions=questions, description=description)
+    footer = props.PropsUIFooter(progress)
+
+    page = props.PropsUIPageDonation("ASD", header, body, footer)
+    return CommandUIRender(page)
+
+
+
+
